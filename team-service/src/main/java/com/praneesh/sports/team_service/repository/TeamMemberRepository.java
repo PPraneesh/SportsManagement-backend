@@ -28,4 +28,8 @@ public interface TeamMemberRepository
             List<Long> teamIds,
             Long userId
     );
+
+    List<TeamMember> findAllByUserIdAndActiveTrueOrderByJoinedAtDesc(
+            Long userId
+    );
 }

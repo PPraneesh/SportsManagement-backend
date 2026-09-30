@@ -1,14 +1,12 @@
 package com.praneesh.sports.team_service.mapper;
 
+import com.praneesh.sports.team_service.client.dto.InternalUserResponse;
 import com.praneesh.sports.team_service.dto.request.CreateInvitationRequest;
 import com.praneesh.sports.team_service.dto.request.ManualTeamRequest;
 import com.praneesh.sports.team_service.dto.request.RegisterTeamRequest;
 import com.praneesh.sports.team_service.dto.request.UpdateTeamRequest;
 
-import com.praneesh.sports.team_service.dto.response.InternalTeamResponse;
-import com.praneesh.sports.team_service.dto.response.TeamInvitationResponse;
-import com.praneesh.sports.team_service.dto.response.TeamMemberResponse;
-import com.praneesh.sports.team_service.dto.response.TeamResponse;
+import com.praneesh.sports.team_service.dto.response.*;
 
 import com.praneesh.sports.team_service.entity.Team;
 import com.praneesh.sports.team_service.entity.TeamInvitation;
@@ -142,20 +140,6 @@ public final class TeamMapper {
         return member;
     }
 
-    public static TeamMemberResponse toResponse(
-            TeamMember member
-    ) {
-
-        return new TeamMemberResponse(
-                member.getId(),
-                member.getTeamId(),
-                member.getUserId(),
-                member.getMemberRole(),
-                member.isActive(),
-                member.getJoinedAt()
-        );
-    }
-
     public static TeamInvitation toEntity(
             CreateInvitationRequest request,
             Long tournamentId,
@@ -223,6 +207,38 @@ public final class TeamMapper {
                 team.getStatus().name(),
                 team.getCreatedAt(),
                 registrationOrder
+        );
+    }
+
+    public static TeamMemberResponse toResponse(
+            TeamMember member,
+            InternalUserResponse user
+    ) {
+
+        return new TeamMemberResponse(
+                member.getId(),
+                member.getTeamId(),
+                user.name(),
+                user.email(),
+                member.getMemberRole(),
+                member.isActive(),
+                member.getJoinedAt()
+        );
+    }
+
+    public static MyTeamResponse toMyTeamResponse(
+            Team team,
+            TeamMember member
+    ) {
+
+        return new MyTeamResponse(
+                team.getId(),
+                team.getTournamentId(),
+                team.getName(),
+                team.getShortName(),
+                team.getLogoUrl(),
+                team.getStatus(),
+                member.getMemberRole()
         );
     }
 }

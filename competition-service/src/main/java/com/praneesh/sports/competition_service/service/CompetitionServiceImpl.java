@@ -16,12 +16,14 @@ import com.praneesh.sports.competition_service.entity.GroupTeam;
 import com.praneesh.sports.competition_service.entity.Match;
 
 import com.praneesh.sports.competition_service.enums.GroupStatus;
+import com.praneesh.sports.competition_service.enums.MatchResultType;
 import com.praneesh.sports.competition_service.enums.MatchStatus;
 import com.praneesh.sports.competition_service.enums.MatchType;
 
 import com.praneesh.sports.competition_service.exception.MatchAccessDeniedException;
 import com.praneesh.sports.competition_service.exception.MatchNotFoundException;
 import com.praneesh.sports.competition_service.exception.TournamentFixtureException;
+import com.praneesh.sports.competition_service.kafka.CompetitionKafkaProducer;
 import com.praneesh.sports.competition_service.mapper.GroupMapper;
 import com.praneesh.sports.competition_service.mapper.MatchMapper;
 
@@ -64,9 +66,10 @@ public class CompetitionServiceImpl implements CompetitionService {
     private final TournamentClient tournamentClient;
     private final GroupRepository groupRepository;
     private final GroupTeamRepository groupTeamRepository;
+    private final CompetitionKafkaProducer competitionKafkaProducer;
 
     //    private final TournamentClient tournamentClient;
-    public CompetitionServiceImpl(MatchRepository matchRepository, TeamClient teamClient, TournamentClient tournamentClient, GroupRepository groupRepository, GroupTeamRepository groupTeamRepository) {
+    public CompetitionServiceImpl(MatchRepository matchRepository, TeamClient teamClient, TournamentClient tournamentClient, GroupRepository groupRepository, GroupTeamRepository groupTeamRepository, CompetitionKafkaProducer competitionKafkaProducer) {
 
         this.matchRepository = matchRepository;
 
@@ -76,6 +79,8 @@ public class CompetitionServiceImpl implements CompetitionService {
 
         this.groupRepository = groupRepository;
         this.groupTeamRepository = groupTeamRepository;
+
+        this.competitionKafkaProducer = competitionKafkaProducer;
     }
 
     @Override
@@ -404,6 +409,22 @@ public class CompetitionServiceImpl implements CompetitionService {
 
             updateFinalWithSemifinalWinner(savedMatch);
         }
+
+        if (match.getMatchType() == MatchType.FINAL) {
+
+            if (savedMatch.getWinnerTeamId() == null) {
+
+                throw new MatchOperationException(
+                        "Final must have a winner"
+                );
+            }
+
+            competitionKafkaProducer
+                    .publishTournamentCompleted(
+                            savedMatch.getTournamentId()
+                    );
+        }
+
 
         return MatchMapper.toResponse(savedMatch);
     }
@@ -1110,5 +1131,151 @@ public class CompetitionServiceImpl implements CompetitionService {
                 match.getTieBreakerDescription(),
 
                 match.getScheduledAt(), match.getOriginalScheduledAt(), match.getStartedAt(), match.getCompletedAt());
+    }
+
+    @Override
+    @Transactional
+    public void handleTeamWithdrawal(
+            Long tournamentId,
+            Long withdrawnTeamId
+    ) {
+
+        List<Match> matches =
+                matchRepository
+                        .findAllByTournamentIdOrderByRoundNumberAscMatchNumberAsc(
+                                tournamentId
+                        );
+
+        for (Match match : matches) {
+
+            boolean teamA =
+                    withdrawnTeamId.equals(
+                            match.getTeamAId()
+                    );
+
+            boolean teamB =
+                    withdrawnTeamId.equals(
+                            match.getTeamBId()
+                    );
+
+            /*
+             * This match does not involve the withdrawn team.
+             */
+            if (!teamA && !teamB) {
+                continue;
+            }
+
+            /*
+             * Completed matches remain unchanged.
+             */
+            if (match.getStatus() ==
+                    MatchStatus.COMPLETED) {
+
+                continue;
+            }
+
+            /*
+             * A live match should prevent withdrawal.
+             *
+             * Ideally this should already be checked before
+             * Team Service commits the withdrawal. This check
+             * is still useful as a safety guard.
+             */
+            if (match.getStatus() ==
+                    MatchStatus.LIVE) {
+
+                throw new MatchOperationException(
+                        "Team cannot be withdrawn while it has a live match: "
+                                + match.getMatchCode()
+                );
+            }
+
+            Long opponentTeamId;
+
+            if (teamA) {
+                opponentTeamId =
+                        match.getTeamBId();
+            } else {
+                opponentTeamId =
+                        match.getTeamAId();
+            }
+
+            /*
+             * Safety check.
+             */
+            if (opponentTeamId == null) {
+                continue;
+            }
+
+            /*
+             * Opponent wins by walkover.
+             */
+            match.setWinnerTeamId(
+                    opponentTeamId
+            );
+
+            match.setResultType(
+                    MatchResultType.WALKOVER
+            );
+
+            match.setStatus(
+                    MatchStatus.COMPLETED
+            );
+
+            match.setCompletedAt(
+                    LocalDateTime.now()
+            );
+
+            /*
+             * Do not invent a 1-0 / 0-1 score.
+             * Leave scores and run rates null.
+             */
+            match.setTeamAScore(null);
+            match.setTeamBScore(null);
+
+            match.setTeamARunRate(null);
+            match.setTeamBRunRate(null);
+
+            match.setTieBreakerDescription(
+                    "Opponent won by walkover because the opposing team withdrew"
+            );
+
+            matchRepository.save(match);
+        }
+
+        /*
+         * After the walkovers have been applied,
+         * continue the normal knockout progression.
+         */
+        processWithdrawalProgression(
+                tournamentId
+        );
+    }
+
+    private void processWithdrawalProgression(
+            Long tournamentId
+    ) {
+
+        List<Match> matches =
+                matchRepository
+                        .findAllByTournamentIdOrderByRoundNumberAscMatchNumberAsc(
+                                tournamentId
+                        );
+
+        for (Match match : matches) {
+
+            if (match.getStatus() !=
+                    MatchStatus.COMPLETED) {
+                continue;
+            }
+
+            if (match.getMatchType() ==
+                    MatchType.SEMIFINAL) {
+
+                updateFinalWithSemifinalWinner(
+                        match
+                );
+            }
+        }
     }
 }

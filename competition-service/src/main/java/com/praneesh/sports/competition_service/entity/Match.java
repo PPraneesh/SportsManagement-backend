@@ -1,13 +1,20 @@
 package com.praneesh.sports.competition_service.entity;
 
+import com.praneesh.sports.competition_service.enums.MatchResultType;
 import com.praneesh.sports.competition_service.enums.MatchStatus;
 import com.praneesh.sports.competition_service.enums.MatchType;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Getter
+@Setter
+@NoArgsConstructor
 @Table(
         name = "matches",
         indexes = {
@@ -93,6 +100,10 @@ public class Match {
     )
     private String tieBreakerDescription;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "result_type", length = 20)
+    private MatchResultType resultType;
+
     @Column(name = "scheduled_at")
     private LocalDateTime scheduledAt;
 
@@ -105,175 +116,4 @@ public class Match {
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
-    public Match() {
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public Long getTournamentId() {
-        return tournamentId;
-    }
-
-    public void setTournamentId(Long tournamentId) {
-        this.tournamentId = tournamentId;
-    }
-
-    public Long getGroupId() {
-        return groupId;
-    }
-
-    public void setGroupId(Long groupId) {
-        this.groupId = groupId;
-    }
-
-    public Long getTeamAId() {
-        return teamAId;
-    }
-
-    public void setTeamAId(Long teamAId) {
-        this.teamAId = teamAId;
-    }
-
-    public Long getTeamBId() {
-        return teamBId;
-    }
-
-    public void setTeamBId(Long teamBId) {
-        this.teamBId = teamBId;
-    }
-
-    public Long getWinnerTeamId() {
-        return winnerTeamId;
-    }
-
-    public void setWinnerTeamId(Long winnerTeamId) {
-        this.winnerTeamId = winnerTeamId;
-    }
-
-    public String getMatchCode() {
-        return matchCode;
-    }
-
-    public void setMatchCode(String matchCode) {
-        this.matchCode = matchCode;
-    }
-
-    public MatchType getMatchType() {
-        return matchType;
-    }
-
-    public void setMatchType(MatchType matchType) {
-        this.matchType = matchType;
-    }
-
-    public MatchStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(MatchStatus status) {
-        this.status = status;
-    }
-
-    public Integer getRoundNumber() {
-        return roundNumber;
-    }
-
-    public void setRoundNumber(Integer roundNumber) {
-        this.roundNumber = roundNumber;
-    }
-
-    public Integer getMatchNumber() {
-        return matchNumber;
-    }
-
-    public void setMatchNumber(Integer matchNumber) {
-        this.matchNumber = matchNumber;
-    }
-
-    public Integer getTeamAScore() {
-        return teamAScore;
-    }
-
-    public void setTeamAScore(Integer teamAScore) {
-        this.teamAScore = teamAScore;
-    }
-
-    public Integer getTeamBScore() {
-        return teamBScore;
-    }
-
-    public void setTeamBScore(Integer teamBScore) {
-        this.teamBScore = teamBScore;
-    }
-
-    public Double getTeamARunRate() {
-        return teamARunRate;
-    }
-
-    public void setTeamARunRate(Double teamARunRate) {
-        this.teamARunRate = teamARunRate;
-    }
-
-    public Double getTeamBRunRate() {
-        return teamBRunRate;
-    }
-
-    public void setTeamBRunRate(Double teamBRunRate) {
-        this.teamBRunRate = teamBRunRate;
-    }
-
-    public String getTieBreakerDescription() {
-        return tieBreakerDescription;
-    }
-
-    public void setTieBreakerDescription(
-            String tieBreakerDescription
-    ) {
-        this.tieBreakerDescription =
-                tieBreakerDescription;
-    }
-
-    public LocalDateTime getScheduledAt() {
-        return scheduledAt;
-    }
-
-    public void setScheduledAt(
-            LocalDateTime scheduledAt
-    ) {
-        this.scheduledAt = scheduledAt;
-    }
-
-    public LocalDateTime getOriginalScheduledAt() {
-        return originalScheduledAt;
-    }
-
-    public void setOriginalScheduledAt(
-            LocalDateTime originalScheduledAt
-    ) {
-        this.originalScheduledAt =
-                originalScheduledAt;
-    }
-
-    public LocalDateTime getStartedAt() {
-        return startedAt;
-    }
-
-    public void setStartedAt(
-            LocalDateTime startedAt
-    ) {
-        this.startedAt = startedAt;
-    }
-
-    public LocalDateTime getCompletedAt() {
-        return completedAt;
-    }
-
-    public void setCompletedAt(
-            LocalDateTime completedAt
-    ) {
-        this.completedAt =
-                completedAt;
-    }
 }

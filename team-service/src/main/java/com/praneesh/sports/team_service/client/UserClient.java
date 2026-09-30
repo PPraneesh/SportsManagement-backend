@@ -23,7 +23,7 @@ public class UserClient {
     }
 
     public InternalUserResponse getUser(
-            Long Id
+            Long id
     ) {
 
         try {
@@ -31,8 +31,8 @@ public class UserClient {
             return restClient
                     .get()
                     .uri(
-                            "/internal/users/{Id}",
-                            Id
+                            "/internal/users/{id}",
+                            id
                     )
                     .retrieve()
                     .body(
@@ -42,7 +42,7 @@ public class UserClient {
         } catch (HttpClientErrorException.NotFound e) {
 
             throw new UserNotFoundException(
-                    "User not found with Id: " + Id
+                    "User not found with Id: " + id
             );
 
         } catch (RestClientException e) {

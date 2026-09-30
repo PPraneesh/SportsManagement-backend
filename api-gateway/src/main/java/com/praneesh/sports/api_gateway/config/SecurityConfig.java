@@ -46,9 +46,12 @@ public class SecurityConfig {
                                 "/api/users/register"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET,
+                                "/api/tournaments/public/**",
                                 "/api/tournaments/*/matches",
+                                 "/api/tournaments/*/teams",
                                 "/api/matches/**",
-                                "/api/public/**")
+                                "/api/public/**"
+                        )
                         .permitAll()
 
                         .anyRequest().authenticated()

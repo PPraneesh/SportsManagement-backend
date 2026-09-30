@@ -11,6 +11,7 @@ import com.praneesh.sports.team_service.dto.request.RegisterTeamRequest;
 import com.praneesh.sports.team_service.dto.request.UpdateTeamRequest;
 
 import com.praneesh.sports.team_service.dto.response.InternalTeamResponse;
+import com.praneesh.sports.team_service.dto.response.MyTeamResponse;
 import com.praneesh.sports.team_service.dto.response.TeamMemberResponse;
 import com.praneesh.sports.team_service.dto.response.TeamResponse;
 
@@ -24,6 +25,7 @@ import com.praneesh.sports.team_service.exception.TeamAccessDeniedException;
 import com.praneesh.sports.team_service.exception.TeamNotFoundException;
 import com.praneesh.sports.team_service.exception.TeamOperationException;
 
+import com.praneesh.sports.team_service.kafka.TeamKafkaProducer;
 import com.praneesh.sports.team_service.mapper.TeamMapper;
 
 import com.praneesh.sports.team_service.repository.TeamMemberRepository;
@@ -41,6 +43,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import com.praneesh.sports.team_service.dto.event.TeamCapacityReachedEvent;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Transactional
@@ -54,14 +57,16 @@ public class TeamServiceImpl
     private final TournamentClient tournamentClient;
     private final UserClient userClient;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final TeamKafkaProducer teamKafkaProducer;
+
     public TeamServiceImpl(
             TeamRepository teamRepository,
             TeamMemberRepository teamMemberRepository,
             TeamInvitationRepository invitationRepository,
             TournamentClient tournamentClient,
             UserClient userClient,
-            ApplicationEventPublisher applicationEventPublisher
-    ) {
+            ApplicationEventPublisher applicationEventPublisher,
+            TeamKafkaProducer teamKafkaProducer) {
 
         this.teamRepository = teamRepository;
         this.teamMemberRepository = teamMemberRepository;
@@ -71,6 +76,7 @@ public class TeamServiceImpl
         this.userClient = userClient;
 
         this.applicationEventPublisher = applicationEventPublisher;
+        this.teamKafkaProducer = teamKafkaProducer;
     }
 
     @Override
@@ -387,7 +393,18 @@ public class TeamServiceImpl
                         teamId
                 )
                 .stream()
-                .map(TeamMapper::toResponse)
+                .map(member -> {
+
+                    InternalUserResponse user =
+                            userClient.getUser(
+                                    member.getUserId()
+                            );
+
+                    return TeamMapper.toResponse(
+                            member,
+                            user
+                    );
+                })
                 .toList();
     }
 
@@ -469,7 +486,8 @@ public class TeamServiceImpl
                 );
 
         return TeamMapper.toResponse(
-                teamMemberRepository.save(teamMember)
+                teamMemberRepository.save(teamMember),
+                member
         );
     }
 
@@ -598,6 +616,7 @@ public class TeamServiceImpl
 
         teamMemberRepository.saveAll(members);
 
+        teamKafkaProducer.publishTeamWithdraw(tournament.id(),teamId);
         return TeamMapper.toResponse(
                 teamRepository.save(team)
         );
@@ -774,6 +793,59 @@ public class TeamServiceImpl
                                 index + 1
                         )
                 )
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MyTeamResponse> getMyTeams() {
+
+        Long userId =
+                SecurityUtils.requireCurrentUserId();
+
+        List<TeamMember> memberships =
+                teamMemberRepository
+                        .findAllByUserIdAndActiveTrueOrderByJoinedAtDesc(
+                                userId
+                        );
+
+        if (memberships.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> teamIds =
+                memberships.stream()
+                        .map(TeamMember::getTeamId)
+                        .toList();
+
+        Map<Long, Team> teamsById =
+                teamRepository.findAllById(teamIds)
+                        .stream()
+                        .collect(
+                                java.util.stream.Collectors.toMap(
+                                        Team::getId,
+                                        team -> team
+                                )
+                        );
+
+        return memberships.stream()
+                .map(member -> {
+
+                    Team team =
+                            teamsById.get(
+                                    member.getTeamId()
+                            );
+
+                    if (team == null) {
+                        return null;
+                    }
+
+                    return TeamMapper.toMyTeamResponse(
+                            team,
+                            member
+                    );
+                })
+                .filter(java.util.Objects::nonNull)
                 .toList();
     }
 }

@@ -8,11 +8,20 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class KafkaTopicConfig {
 
-    public static final String TOURNAMENT_EVENTS =
-            "tournament-events";
+    public static final String TOURNAMENT_EVENTS = "tournament-events";
 
-    public static final String COMPETITION_EVENTS =
-            "competition-events";
+    public static final String COMPETITION_EVENTS = "competition-events";
+
+    public static final String TEAM_EVENTS = "team-events";
+
+    @Bean
+    public NewTopic teamEventTopic(){
+        return new NewTopic(
+                TEAM_EVENTS,
+                1,
+                (short) 1
+        );
+    }
 
     @Bean
     public NewTopic tournamentEventsTopic() {

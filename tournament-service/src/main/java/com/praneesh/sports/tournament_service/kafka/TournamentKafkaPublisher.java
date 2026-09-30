@@ -1,5 +1,6 @@
-package com.praneesh.sports.tournament_service.config;
+package com.praneesh.sports.tournament_service.kafka;
 
+import com.praneesh.sports.tournament_service.config.KafkaTopicConfig;
 import com.praneesh.sports.tournament_service.dto.event.TournamentRegistrationClosedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

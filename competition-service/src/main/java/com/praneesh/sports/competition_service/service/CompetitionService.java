@@ -54,4 +54,9 @@ public interface CompetitionService {
             String slug,
             String matchCode
     );
+
+    void handleTeamWithdrawal(
+            Long tournamentId,
+            Long teamId
+    );
 }

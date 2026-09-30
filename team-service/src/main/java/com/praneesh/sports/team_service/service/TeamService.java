@@ -6,6 +6,7 @@ import com.praneesh.sports.team_service.dto.request.RegisterTeamRequest;
 import com.praneesh.sports.team_service.dto.request.UpdateTeamRequest;
 
 import com.praneesh.sports.team_service.dto.response.InternalTeamResponse;
+import com.praneesh.sports.team_service.dto.response.MyTeamResponse;
 import com.praneesh.sports.team_service.dto.response.TeamMemberResponse;
 import com.praneesh.sports.team_service.dto.response.TeamResponse;
 
@@ -61,4 +62,5 @@ public interface TeamService {
     List<InternalTeamResponse> getInternalTournamentTeams(
             Long tournamentId
     );
+    List<MyTeamResponse> getMyTeams();
 }

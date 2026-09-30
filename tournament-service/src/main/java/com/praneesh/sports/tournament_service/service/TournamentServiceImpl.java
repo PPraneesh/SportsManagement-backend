@@ -417,5 +417,40 @@ public class TournamentServiceImpl
         }
     }
 
+    @Override
+    public void completeTournament(
+            Long tournamentId
+    ) {
+
+        Tournament tournament =
+                findTournament(tournamentId);
+
+        /*
+         * Idempotency:
+         * if Kafka redelivers the event,
+         * don't fail the operation.
+         */
+        if (tournament.getStatus() ==
+                TournamentStatus.COMPLETED) {
+
+            return;
+        }
+
+        /*
+         * A cancelled tournament must not
+         * become completed.
+         */
+        if (tournament.getStatus() ==
+                TournamentStatus.CANCELLED) {
+
+            return;
+        }
+
+        tournament.setStatus(
+                TournamentStatus.COMPLETED
+        );
+
+        tournamentRepository.save(tournament);
+    }
 
 }

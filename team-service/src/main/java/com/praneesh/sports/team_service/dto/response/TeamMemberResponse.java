@@ -7,7 +7,8 @@ import java.time.LocalDateTime;
 public record TeamMemberResponse(
         Long id,
         Long teamId,
-        Long userId,
+        String name,
+        String email,
         TeamMemberRole memberRole,
         boolean active,
         LocalDateTime joinedAt

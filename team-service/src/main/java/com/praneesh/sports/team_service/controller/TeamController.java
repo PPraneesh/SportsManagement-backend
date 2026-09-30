@@ -5,6 +5,7 @@ import com.praneesh.sports.team_service.dto.request.ManualTeamRequest;
 import com.praneesh.sports.team_service.dto.request.RegisterTeamRequest;
 import com.praneesh.sports.team_service.dto.request.UpdateTeamRequest;
 
+import com.praneesh.sports.team_service.dto.response.MyTeamResponse;
 import com.praneesh.sports.team_service.dto.response.TeamMemberResponse;
 import com.praneesh.sports.team_service.dto.response.TeamResponse;
 
@@ -213,6 +214,17 @@ public class TeamController {
 
         return ResponseEntity.ok(
                 teamService.withdrawTeam(teamId)
+        );
+    }
+
+    @GetMapping(
+            "/api/users/me/teams"
+    )
+    public ResponseEntity<List<MyTeamResponse>>
+    getMyTeams() {
+
+        return ResponseEntity.ok(
+                teamService.getMyTeams()
         );
     }
 }

@@ -45,6 +45,10 @@ public interface TournamentService {
 
     InternalTournamentRegistrationResponse getRegistrationInfo(Long tournamentId);
 
+    void completeTournament(
+            Long tournamentId
+    );
+
     void closeRegistrationIfCapacityReached(
             Long tournamentId,
             long activeTeamCount
