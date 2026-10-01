@@ -1,0 +1,11 @@
+# Centralized logs
+logs/
+*.log
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# OS files
+Thumbs.db
+Desktop.ini

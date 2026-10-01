@@ -94,5 +94,10 @@ spring:
               predicates:
                 - Path=/api/tournaments/**
 logging:
+  file:
+    name: ${LOG_PATH:../logs}/api-gateway.log
   level:
+    root: info
+    com.praneesh.sports: debug
     org.springframework.security: debug
+

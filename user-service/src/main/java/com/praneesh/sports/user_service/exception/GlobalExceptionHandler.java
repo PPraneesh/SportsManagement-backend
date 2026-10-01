@@ -1,7 +1,8 @@
 package com.praneesh.sports.user_service.exception;
 
-
 import com.praneesh.sports.user_service.dto.response.ApiErrorResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -13,10 +14,13 @@ import java.time.LocalDateTime;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(EmailAlreadyExistsException.class)
     public ResponseEntity<ApiErrorResponse> handleEmailExists(
             EmailAlreadyExistsException ex
     ) {
+        log.warn("Email already exists conflict: {}", ex.getMessage());
 
         ApiErrorResponse response =
                 new ApiErrorResponse(
@@ -34,6 +38,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleInvalidCredentials(
             InvalidCredentialsException ex
     ) {
+        log.warn("Invalid credentials error: {}", ex.getMessage());
 
         ApiErrorResponse response =
                 new ApiErrorResponse(
@@ -62,6 +67,8 @@ public class GlobalExceptionHandler {
                                 + error.getDefaultMessage())
                 .orElse("Invalid request");
 
+        log.warn("Method argument validation failed: {}", message);
+
         ApiErrorResponse response =
                 new ApiErrorResponse(
                         HttpStatus.BAD_REQUEST.value(),
@@ -73,4 +80,22 @@ public class GlobalExceptionHandler {
                 .badRequest()
                 .body(response);
     }
-}
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiErrorResponse> handleGeneralException(
+            Exception ex
+    ) {
+        log.error("Unhandled unexpected exception occurred: {}", ex.getMessage(), ex);
+
+        ApiErrorResponse response =
+                new ApiErrorResponse(
+                        HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                        "An unexpected internal error occurred",
+                        LocalDateTime.now()
+                );
+
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(response);
+    }
+}
