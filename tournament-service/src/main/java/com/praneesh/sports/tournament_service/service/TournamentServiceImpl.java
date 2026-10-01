@@ -152,61 +152,62 @@ public class TournamentServiceImpl
                 .toList();
     }
 
-    @Override
-    public TournamentResponse updateTournament(
-            Long tournamentId,
-            UpdateTournamentRequest request
-    ) {
+@Override
+public TournamentResponse updateTournament(
+        Long tournamentId,
+        UpdateTournamentRequest request
+) {
 
-        Tournament tournament =
-                findTournament(tournamentId);
+    Tournament tournament =
+            findTournament(tournamentId);
 
-        verifyOrganizer(tournament);
+    verifyOrganizer(tournament);
 
-        if (tournament.getStatus() != TournamentStatus.DRAFT &&
-                tournament.getStatus() != TournamentStatus.OPEN) {
+    if (tournament.getStatus() != TournamentStatus.DRAFT &&
+            tournament.getStatus() != TournamentStatus.OPEN) {
 
-            throw new TournamentOperationException(
-                    "Tournament cannot be edited after registration closes"
-            );
-        }
-
-        /*
-         * Once registration is OPEN, don't change capacity.
-         * Team Service may already have registered teams.
-         */
-        if (tournament.getStatus() == TournamentStatus.OPEN &&
-                !request.maximumTeams()
-                        .equals(tournament.getMaximumTeams())) {
-
-            throw new TournamentOperationException(
-                    "Maximum teams cannot be changed after registration opens"
-            );
-        }
-
-        TournamentValidationUtil.validateDates(
-                request.registrationStart(),
-                request.registrationEnd(),
-                request.startDate(),
-                request.endDate()
+        throw new TournamentOperationException(
+                "Tournament cannot be edited after registration closes"
         );
-
-        TournamentValidationUtil.validatePoints(
-                request.winPoints(),
-                request.drawPoints(),
-                request.lossPoints()
-        );
-
-        TournamentMapper.updateEntity(
-                tournament,
-                request
-        );
-
-        Tournament saved =
-                tournamentRepository.save(tournament);
-
-        return TournamentMapper.toResponse(saved);
     }
+
+    if (tournament.getStatus() == TournamentStatus.OPEN &&
+            !request.maximumTeams()
+                    .equals(tournament.getMaximumTeams())) {
+
+        throw new TournamentOperationException(
+                "Maximum teams cannot be changed after registration opens"
+        );
+    }
+
+
+    TournamentValidationUtil.validateUpdateDates(
+            tournament,
+            request.registrationStart(),
+            request.registrationEnd(),
+            request.startDate(),
+            request.endDate()
+    );
+
+
+    TournamentValidationUtil.validatePoints(
+            request.winPoints(),
+            request.drawPoints(),
+            request.lossPoints()
+    );
+
+
+    TournamentMapper.updateEntity(
+            tournament,
+            request
+    );
+
+
+    Tournament saved =
+            tournamentRepository.save(tournament);
+
+    return TournamentMapper.toResponse(saved);
+}
 
     @Override
     public TournamentResponse openRegistration(

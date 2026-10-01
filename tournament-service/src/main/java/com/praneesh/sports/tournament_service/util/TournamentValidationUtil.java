@@ -1,9 +1,12 @@
 package com.praneesh.sports.tournament_service.util;
+import com.praneesh.sports.tournament_service.entity.Tournament;
+import com.praneesh.sports.tournament_service.enums.TournamentStatus;
+import com.praneesh.sports.tournament_service.exception.TournamentOperationException;
 
+import java.time.LocalDateTime;
 
 import com.praneesh.sports.tournament_service.exception.InvalidTournamentException;
 
-import java.time.LocalDateTime;
 
 public final class TournamentValidationUtil {
 
@@ -68,4 +71,106 @@ public final class TournamentValidationUtil {
             );
         }
     }
+    public static void validateUpdateDates(
+        Tournament tournament,
+        LocalDateTime registrationStart,
+        LocalDateTime registrationEnd,
+        LocalDateTime startDate,
+        LocalDateTime endDate
+) {
+
+    LocalDateTime now =
+            LocalDateTime.now();
+
+    if (tournament.getStatus() == TournamentStatus.DRAFT) {
+
+        if (!registrationStart.isAfter(now)) {
+
+            throw new TournamentOperationException(
+                    "Registration start must be in the future"
+            );
+        }
+
+        if (!registrationEnd.isAfter(registrationStart)) {
+
+            throw new TournamentOperationException(
+                    "Registration end must be after registration start"
+            );
+        }
+
+        if (!startDate.isAfter(registrationEnd)) {
+
+            throw new TournamentOperationException(
+                    "Tournament start date must be after registration end"
+            );
+        }
+
+        if (!endDate.isAfter(startDate)) {
+
+            throw new TournamentOperationException(
+                    "Tournament end date must be after tournament start date"
+            );
+        }
+
+        return;
+    }
+
+    if (tournament.getStatus() == TournamentStatus.OPEN) {
+
+        if (!registrationStart.isEqual(
+                tournament.getRegistrationStart()
+        )) {
+
+            throw new TournamentOperationException(
+                    "Registration start cannot be changed after registration opens"
+            );
+        }
+
+        if (!registrationEnd.isAfter(now)) {
+
+            throw new TournamentOperationException(
+                    "Registration end must be in the future"
+            );
+        }
+
+        if (!registrationEnd.isAfter(
+                tournament.getRegistrationEnd()
+        )) {
+
+            throw new TournamentOperationException(
+                    "Registration end can only be extended after registration opens"
+            );
+        }
+
+        if (!registrationEnd.isBefore(
+                tournament.getStartDate()
+        )) {
+
+            throw new TournamentOperationException(
+                    "Registration must end before the tournament starts"
+            );
+        }
+
+        if (!startDate.isEqual(
+                tournament.getStartDate()
+        )) {
+
+            throw new TournamentOperationException(
+                    "Tournament start date cannot be changed after registration opens"
+            );
+        }
+
+
+        if (!endDate.isEqual(
+                tournament.getEndDate()
+        )) {
+
+            throw new TournamentOperationException(
+                    "Tournament end date cannot be changed after registration opens"
+            );
+        }
+
+        return;
+    }
+}
 }

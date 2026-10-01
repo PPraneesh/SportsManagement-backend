@@ -19,6 +19,11 @@ public interface TeamMemberRepository
             Long teamId
     );
 
+    Optional<TeamMember> findByTeamIdAndUserId(
+            Long teamId,
+            Long userId
+    );
+
     boolean existsByTeamIdAndUserIdAndActiveTrue(
             Long teamId,
             Long userId

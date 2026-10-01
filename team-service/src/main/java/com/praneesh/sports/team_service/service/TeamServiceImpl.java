@@ -44,6 +44,7 @@ import com.praneesh.sports.team_service.dto.event.TeamCapacityReachedEvent;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -408,88 +409,111 @@ public class TeamServiceImpl
                 .toList();
     }
 
-    @Override
-    public TeamMemberResponse addMember(
-            Long teamId,
-            AddTeamMemberRequest request
-    ) {
+@Override
+public TeamMemberResponse addMember(
+        Long teamId,
+        AddTeamMemberRequest request
+) {
 
-        Team team =
-                findTeam(teamId);
+    Team team =
+            findTeam(teamId);
 
-        Long currentUserId =
-                SecurityUtils.requireCurrentUserId();
+    Long currentUserId =
+            SecurityUtils.requireCurrentUserId();
 
-        verifyCaptain(
-                team,
-                currentUserId
+    verifyCaptain(
+            team,
+            currentUserId
+    );
+
+    if (team.getStatus() ==
+            TeamStatus.WITHDRAWN) {
+
+        throw new TeamOperationException(
+                "A withdrawn team cannot add members"
         );
+    }
 
-        if (team.getStatus() ==
-                TeamStatus.WITHDRAWN) {
-
-            throw new TeamOperationException(
-                    "A withdrawn team cannot add members"
+    TournamentRegistrationInfo tournament =
+            tournamentClient.getRegistrationInfo(
+                    team.getTournamentId()
             );
-        }
 
-        TournamentRegistrationInfo tournament =
-                tournamentClient.getRegistrationInfo(
-                        team.getTournamentId()
-                );
+    TeamValidationUtil.validateTeamModifiable(
+            tournament
+    );
 
-        TeamValidationUtil.validateTeamModifiable(
-                tournament
-        );
+    InternalUserResponse member =
+            userClient.verifyActiveUserByEmail(
+                    request.email()
+            );
 
-        InternalUserResponse member = userClient.verifyActiveUserByEmail(
-                request.email()
-        );
+    Long userId = member.id();
 
-        if (teamMemberRepository
-                .existsByTeamIdAndUserIdAndActiveTrue(
-                        teamId,
-                        member.id()
-                )) {
+    Optional<TeamMember> existingMember =
+            teamMemberRepository.findByTeamIdAndUserId(
+                    teamId,
+                    userId
+            );
+
+    if (existingMember.isPresent()) {
+
+        TeamMember existing =
+                existingMember.get();
+
+        if (existing.isActive()) {
 
             throw new TeamOperationException(
                     "User is already a member of this team"
             );
         }
 
-        List<Long> activeTeamIds =
-                teamRepository
-                        .findAllByTournamentIdAndStatusOrderByCreatedAtAsc(
-                                team.getTournamentId(),
-                                TeamStatus.ACTIVE
-                        )
-                        .stream()
-                        .map(Team::getId)
-                        .toList();
 
-        if (!activeTeamIds.isEmpty() &&
-                teamMemberRepository
-                        .existsByTeamIdInAndUserIdAndActiveTrue(
-                                activeTeamIds,
-                                member.id()
-                        )) {
-
-            throw new TeamOperationException(
-                    "A user can belong to only one team in a tournament"
-            );
-        }
-
-        TeamMember teamMember =
-                TeamMapper.toPlayerMember(
-                        teamId,
-                        member.id()
-                );
+        existing.setActive(true);
+        existing.setMemberRole(
+                TeamMemberRole.PLAYER
+        );
 
         return TeamMapper.toResponse(
-                teamMemberRepository.save(teamMember),
+                teamMemberRepository.save(existing),
                 member
         );
     }
+
+    List<Long> activeTeamIds =
+            teamRepository
+                    .findAllByTournamentIdAndStatusOrderByCreatedAtAsc(
+                            team.getTournamentId(),
+                            TeamStatus.ACTIVE
+                    )
+                    .stream()
+                    .map(Team::getId)
+                    .toList();
+
+    if (!activeTeamIds.isEmpty() &&
+            teamMemberRepository
+                    .existsByTeamIdInAndUserIdAndActiveTrue(
+                            activeTeamIds,
+                            userId
+                    )) {
+
+        throw new TeamOperationException(
+                "A user can belong to only one team in a tournament"
+        );
+    }
+
+
+    TeamMember teamMember =
+            TeamMapper.toPlayerMember(
+                    teamId,
+                    userId
+            );
+
+    return TeamMapper.toResponse(
+            teamMemberRepository.save(teamMember),
+            member
+    );
+}
 
     @Override
     public void removeMember(
@@ -796,56 +820,62 @@ public class TeamServiceImpl
                 .toList();
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<MyTeamResponse> getMyTeams() {
+ @Override
+@Transactional(readOnly = true)
+public List<MyTeamResponse> getMyTeams() {
 
-        Long userId =
-                SecurityUtils.requireCurrentUserId();
+    Long userId =
+            SecurityUtils.requireCurrentUserId();
 
-        List<TeamMember> memberships =
-                teamMemberRepository
-                        .findAllByUserIdAndActiveTrueOrderByJoinedAtDesc(
-                                userId
-                        );
-
-        if (memberships.isEmpty()) {
-            return List.of();
-        }
-
-        List<Long> teamIds =
-                memberships.stream()
-                        .map(TeamMember::getTeamId)
-                        .toList();
-
-        Map<Long, Team> teamsById =
-                teamRepository.findAllById(teamIds)
-                        .stream()
-                        .collect(
-                                java.util.stream.Collectors.toMap(
-                                        Team::getId,
-                                        team -> team
-                                )
-                        );
-
-        return memberships.stream()
-                .map(member -> {
-
-                    Team team =
-                            teamsById.get(
-                                    member.getTeamId()
-                            );
-
-                    if (team == null) {
-                        return null;
-                    }
-
-                    return TeamMapper.toMyTeamResponse(
-                            team,
-                            member
+    List<TeamMember> memberships =
+            teamMemberRepository
+                    .findAllByUserIdAndActiveTrueOrderByJoinedAtDesc(
+                            userId
                     );
-                })
-                .filter(java.util.Objects::nonNull)
-                .toList();
+
+    if (memberships.isEmpty()) {
+        return List.of();
     }
+
+    List<Long> teamIds =
+            memberships.stream()
+                    .map(TeamMember::getTeamId)
+                    .toList();
+
+    Map<Long, Team> teamsById =
+            teamRepository.findAllById(teamIds)
+                    .stream()
+                    .collect(
+                            java.util.stream.Collectors.toMap(
+                                    Team::getId,
+                                    team -> team
+                            )
+                    );
+
+    return memberships.stream()
+            .map(member -> {
+
+                Team team =
+                        teamsById.get(
+                                member.getTeamId()
+                        );
+
+                if (team == null) {
+                    return null;
+                }
+
+                TournamentRegistrationInfo tournament =
+                        tournamentClient.getRegistrationInfo(
+                                team.getTournamentId()
+                        );
+
+                return TeamMapper.toMyTeamResponse(
+                        team,
+                        member,
+                        tournament
+                );
+            })
+            .filter(java.util.Objects::nonNull)
+            .toList();
+}
 }

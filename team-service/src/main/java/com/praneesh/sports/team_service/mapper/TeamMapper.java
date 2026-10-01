@@ -15,7 +15,7 @@ import com.praneesh.sports.team_service.entity.TeamMember;
 import com.praneesh.sports.team_service.enums.InvitationStatus;
 import com.praneesh.sports.team_service.enums.TeamMemberRole;
 import com.praneesh.sports.team_service.enums.TeamStatus;
-
+import com.praneesh.sports.team_service.client.dto.TournamentRegistrationInfo;
 import java.time.LocalDateTime;
 import java.util.Locale;
 
@@ -66,10 +66,10 @@ public final class TeamMapper {
         return team;
     }
 
-    public static void updateEntity(
+public static void updateEntity(
             Team team,
             UpdateTeamRequest request
-    ) {
+) {
 
         team.setName(request.name().trim());
 
@@ -77,7 +77,7 @@ public final class TeamMapper {
                 request.shortName()
                         .trim()
                         .toUpperCase(Locale.ROOT)
-        );
+    );
 
         team.setLogoUrl(
                 trimToNull(request.logoUrl())
@@ -85,8 +85,8 @@ public final class TeamMapper {
 
         team.setDescription(
                 trimToNull(request.description())
-        );
-    }
+    );
+}
 
     public static TeamResponse toResponse(
             Team team
@@ -228,7 +228,8 @@ public final class TeamMapper {
 
     public static MyTeamResponse toMyTeamResponse(
             Team team,
-            TeamMember member
+            TeamMember member,
+            TournamentRegistrationInfo tournament
     ) {
 
         return new MyTeamResponse(
@@ -238,7 +239,8 @@ public final class TeamMapper {
                 team.getShortName(),
                 team.getLogoUrl(),
                 team.getStatus(),
-                member.getMemberRole()
+                member.getMemberRole(),
+                tournament
         );
     }
 }

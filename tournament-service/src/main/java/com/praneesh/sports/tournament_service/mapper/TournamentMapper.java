@@ -72,42 +72,63 @@ public final class TournamentMapper {
         return tournament;
     }
 
-    public static void updateEntity(
-            Tournament tournament,
-            UpdateTournamentRequest request
-    ) {
+public static void updateEntity(
+        Tournament tournament,
+        UpdateTournamentRequest request
+) {
 
-        tournament.setName(request.name().trim());
+    tournament.setName(
+            request.name()
+    );
 
-        tournament.setDescription(
-                request.description() == null
-                        ? null
-                        : request.description().trim()
-        );
+    tournament.setDescription(
+            request.description()
+    );
 
-        tournament.setSportType(request.sportType().trim());
-        tournament.setLocation(request.location().trim());
-        tournament.setVisibility(request.visibility());
+    tournament.setSportType(
+            request.sportType()
+    );
 
-        tournament.setMaximumTeams(request.maximumTeams());
+    tournament.setLocation(
+            request.location()
+    );
 
-        if (request.winPoints() != null) {
-            tournament.setWinPoints(request.winPoints());
-        }
+    tournament.setVisibility(
+            request.visibility()
+    );
 
-        if (request.drawPoints() != null) {
-            tournament.setDrawPoints(request.drawPoints());
-        }
+    tournament.setMaximumTeams(
+            request.maximumTeams()
+    );
 
-        if (request.lossPoints() != null) {
-            tournament.setLossPoints(request.lossPoints());
-        }
+    tournament.setWinPoints(
+            request.winPoints()
+    );
 
-        tournament.setRegistrationStart(request.registrationStart());
-        tournament.setRegistrationEnd(request.registrationEnd());
-        tournament.setStartDate(request.startDate());
-        tournament.setEndDate(request.endDate());
-    }
+    tournament.setDrawPoints(
+            request.drawPoints()
+    );
+
+    tournament.setLossPoints(
+            request.lossPoints()
+    );
+
+    tournament.setRegistrationStart(
+            request.registrationStart()
+    );
+
+    tournament.setRegistrationEnd(
+            request.registrationEnd()
+    );
+
+    tournament.setStartDate(
+            request.startDate()
+    );
+
+    tournament.setEndDate(
+            request.endDate()
+    );
+}
 
     public static TournamentResponse toResponse(
             Tournament tournament
